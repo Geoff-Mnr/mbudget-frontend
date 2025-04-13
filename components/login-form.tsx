@@ -1,14 +1,15 @@
 "use client";
-
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
+
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/services/api";
-
+import { toast } from "sonner";
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const { login } = useAuth();
   const router = useRouter();
@@ -29,9 +30,15 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
       });
       const { token, user } = response.data;
       login(token, user);
-      router.push("/dashboard");
+      toast("Bienvenue 🎉", {
+        description: "Vous êtes connecté avec succès.",
+      });
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || "Erreur lors de la connexion.");
       setError(error.response?.data?.message || "Erreur lors de la connexion.");
     } finally {
       setIsLoading(false);
@@ -60,7 +67,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
         </div>
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Connexion..." : "Se connecter"}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="animate-spin size-4" />
+              Connexion...
+            </span>
+          ) : (
+            "Se connecter"
+          )}
         </Button>
       </div>
       <div className="text-center text-sm">
