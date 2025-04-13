@@ -54,3 +54,13 @@ export const register = async (username: string, email: string, password: string
     throw error;
   }
 };
+
+// Fonction pour récupérer les catégories
+export const getCategories = async () => {
+  try {
+    const response = await api.get("/categories");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
