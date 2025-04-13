@@ -24,22 +24,36 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
     setError(null);
     setIsLoading(true);
     try {
+      console.log("Envoi de la requête de connexion à:", process.env.NEXT_PUBLIC_API_URL);
       const response = await api.post("/login", {
         email,
         password,
       });
-      const { token, user } = response.data;
-      login(token, user);
+      console.log("Réponse API data:", response.data);
+
+      // Extraction basée sur le format de réponse exact reçu du backend
+      const token = response.data.access_token;
+      const userData = response.data.user;
+
+      console.log("Token extrait:", token ? token.substring(0, 10) + "..." : "undefined");
+      console.log("Utilisateur extrait:", userData);
+
+      if (!token) {
+        throw new Error("Impossible de récupérer le token d'authentification");
+      }
+
+      login(token, userData);
       toast("Bienvenue 🎉", {
         description: "Vous êtes connecté avec succès.",
       });
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
+      console.log("Redirection vers le tableau de bord...");
+      router.push("/dashboard");
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Erreur lors de la connexion.");
-      setError(error.response?.data?.message || "Erreur lors de la connexion.");
+      console.error("Erreur lors de la connexion:", err);
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = error.response?.data?.message || error.message || "Erreur lors de la connexion.";
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
