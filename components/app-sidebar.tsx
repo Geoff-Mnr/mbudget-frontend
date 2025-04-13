@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconCamera, IconDashboard, IconDatabase, IconFileAi, IconFileDescription, IconFileWord, IconInnerShadowTop, IconReport, IconSettings } from "@tabler/icons-react";
+import { IconCamera, IconCategory, IconCashBanknote, IconDashboard, IconDatabase, IconFileAi, IconFileDescription, IconFileWord, IconInnerShadowTop, IconMoneybag, IconReport, IconSettings } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -18,6 +18,24 @@ const data = {
       title: "Dashboard",
       url: "#",
       icon: IconDashboard,
+    },
+    {
+      title: "Catégories des dépenses",
+      url: "/categories",
+      icon: IconCategory,
+      isActive: true,
+    },
+    {
+      title: "Rentrées d'argent",
+      url: "/incomes",
+      icon: IconMoneybag,
+      isActive: true,
+    },
+    {
+      title: "Dépenses",
+      url: "/expenses",
+      icon: IconCashBanknote,
+      isActive: true,
     },
   ],
   navClouds: [
