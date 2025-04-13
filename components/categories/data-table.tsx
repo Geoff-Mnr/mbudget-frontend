@@ -90,7 +90,7 @@ const columns: ColumnDef<Category>[] = [
     cell: ({ row }) => <div className="max-w-[200px] truncate">{row.original.description || "-"}</div>,
   },
   {
-    accessorKey: "household.name",
+    accessorKey: "Nom du foyer",
     header: "Foyer",
     cell: ({ row }) => <div className="max-w-[150px] truncate">{row.original.household.name}</div>,
   },
@@ -105,9 +105,9 @@ const columns: ColumnDef<Category>[] = [
     ),
   },
   {
-    accessorKey: "is_active",
+    accessorKey: "Actif",
     header: "Actif",
-    cell: ({ row }) => <div className="flex justify-center">{row.original.is_active ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> : <IconLoader />}</div>,
+    cell: ({ row }) => <div className="flex">{row.original.is_active ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> : <IconLoader />}</div>,
   },
   {
     accessorKey: "created_at",
