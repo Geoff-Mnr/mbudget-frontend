@@ -16,24 +16,24 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
       title: "Catégories des dépenses",
-      url: "/categories",
+      url: "/dashboard/categories",
       icon: IconCategory,
       isActive: true,
     },
     {
       title: "Rentrées d'argent",
-      url: "/incomes",
+      url: "/dashboard/incomes",
       icon: IconMoneybag,
       isActive: true,
     },
     {
       title: "Dépenses",
-      url: "/expenses",
+      url: "/dashboard/expenses",
       icon: IconCashBanknote,
       isActive: true,
     },
