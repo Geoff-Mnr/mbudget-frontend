@@ -28,3 +28,13 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   localStorage.removeItem("token");
 };
+
+// Fonction pour créer un compte
+export const register = async (username: string, email: string, password: string, confirmPassword: string) => {
+  try {
+    const response = await api.post("/register", { username, email, password, confirm_password: confirmPassword });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
