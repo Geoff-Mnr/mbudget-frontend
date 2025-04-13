@@ -6,7 +6,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-
+import Link from "next/link";
 const data = {
   user: {
     name: "shadcn",
@@ -18,22 +18,23 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
+      isActive: false,
     },
     {
       title: "Catégories des dépenses",
-      url: "/dashboard/categories",
+      url: "/categories",
       icon: IconCategory,
       isActive: true,
     },
     {
       title: "Rentrées d'argent",
-      url: "/dashboard/incomes",
+      url: "/incomes",
       icon: IconMoneybag,
       isActive: true,
     },
     {
       title: "Dépenses",
-      url: "/dashboard/expenses",
+      url: "/expenses",
       icon: IconCashBanknote,
       isActive: true,
     },
@@ -144,10 +145,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#">
+              <Link href="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
