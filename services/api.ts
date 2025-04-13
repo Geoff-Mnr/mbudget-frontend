@@ -15,3 +15,16 @@ if (typeof window !== "undefined") {
     return config;
   });
 }
+
+// Fonction pour se connecter
+export const login = async (email: string, password: string) => {
+  const response = await api.post("/login", { email, password });
+  const token = response.data.token;
+  localStorage.setItem("token", token);
+  return response.data;
+};
+
+// Fonction pour se déconnecter
+export const logout = async () => {
+  localStorage.removeItem("token");
+};
