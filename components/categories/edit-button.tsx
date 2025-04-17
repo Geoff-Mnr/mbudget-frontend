@@ -35,22 +35,6 @@ interface EditButtonProps {
 export function EditButton({ category, onSuccess }: EditButtonProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isUpdated, setIsUpdated] = useState(false);
-
-  // Effet pour gérer le callback après la fermeture du dialogue
-  useEffect(() => {
-    // Si le dialogue vient de se fermer et que la mise à jour a été effectuée
-    if (!open && isUpdated) {
-      // Réinitialiser l'état de mise à jour
-      setIsUpdated(false);
-      // Exécuter le callback après un court délai
-      const timeoutId = setTimeout(() => {
-        if (onSuccess) onSuccess();
-      }, 100);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [open, isUpdated, onSuccess]);
 
   // Valeurs par défaut en fonction du mode (création ou édition)
   const form = useForm<FormValues>({
@@ -97,23 +81,18 @@ export function EditButton({ category, onSuccess }: EditButtonProps) {
 
       if (response && response.success) {
         toast.success("Catégorie mise à jour avec succès");
-        setIsUpdated(true);
+        setOpen(false);
 
         // Appeler directement le callback si disponible
         if (onSuccess) {
           onSuccess();
         }
-
-        // Fermer la boîte de dialogue après le callback
-        setOpen(false);
       } else {
         console.error("Erreur lors de l'enregistrement de la catégorie:", response);
         toast.error(response?.message || "Erreur lors de l'enregistrement de la catégorie");
-        setIsUpdated(false);
       }
     } catch (error: unknown) {
       console.error("Erreur lors de l'enregistrement de la catégorie:", error);
-      setIsUpdated(false);
 
       // Typeguard pour vérifier si l'erreur a une propriété response
       if (error && typeof error === "object" && "response" in error) {
@@ -145,18 +124,22 @@ export function EditButton({ category, onSuccess }: EditButtonProps) {
       <Dialog
         open={open}
         onOpenChange={(newOpen) => {
-          // Seulement permettre la fermeture si nous ne sommes pas en cours de chargement
-          if (loading && !newOpen) return;
+          // Toujours permettre de fermer le dialogue
           setOpen(newOpen);
+
+          // Si on ferme le dialogue, s'assurer que loading est false
+          if (!newOpen) {
+            setLoading(false);
+          }
         }}
       >
-        <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Modifier la catégorie</DialogTitle>
             <DialogDescription>Modifiez les informations de cette catégorie.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit as SubmitHandler<FormValues>)} className="space-y-4 py-2" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={form.handleSubmit(onSubmit as SubmitHandler<FormValues>)} className="space-y-4 py-2">
               <FormField
                 control={form.control}
                 name="name"

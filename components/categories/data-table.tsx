@@ -6,7 +6,7 @@ import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, us
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconCircleCheckFilled, IconDotsVertical, IconGripVertical, IconLayoutColumns, IconLoader } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconCircleCheckFilled, IconDotsVertical, IconGripVertical, IconLayoutColumns, IconLoader, IconPlus } from "@tabler/icons-react";
 import { ColumnDef, ColumnFiltersState, Row, SortingState, VisibilityState, flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -19,9 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCategories } from "@/services/categoryService";
-import { CategoryFormDialog } from "./category-form-dialog";
-import { EditButton } from "./edit-button";
-import { DeleteButton } from "./delete-button";
+import { CategoryForm } from "./category-form";
+import { DeleteCategoryDialog } from "./delete-category-dialog";
 
 export const categorySchema = z.object({
   id: z.number(),
@@ -66,12 +65,17 @@ export function DataTable() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const sortableId = React.useId();
   const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}));
+  const [refreshRequested, setRefreshRequested] = useState(false);
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(() => data?.map(({ id }) => id) || [], [data]);
 
   const fetchCategories = async () => {
+    console.log("fetchCategories appelé !");
     try {
       setLoading(true);
       setError(null);
@@ -84,6 +88,7 @@ export function DataTable() {
       clearTimeout(timeoutId);
 
       if (response.success && response.data) {
+        console.log("Nouvelles données reçues :", response.data);
         setData(response.data);
         // Réinitialiser la sélection des lignes après un rafraîchissement
         setRowSelection({});
@@ -107,15 +112,31 @@ export function DataTable() {
     fetchCategories();
   };
 
+  // Fonctions pour gérer l'affichage du formulaire
+  const showCreateForm = () => {
+    setSelectedCategory(undefined);
+    setFormMode("create");
+    setIsFormVisible(true);
+  };
+
+  const showEditForm = (category: Category) => {
+    setSelectedCategory(category);
+    setFormMode("edit");
+    setIsFormVisible(true);
+  };
+
+  const hideForm = () => {
+    setIsFormVisible(false);
+  };
+
+  const handleFormSuccess = () => {
+    hideForm();
+    fetchCategories();
+  };
+
   // Créer un composant spécifique pour les actions
   function CategoryActions({ row }: { row: Row<Category> }) {
-    // Créer une fonction de rappel pour le rafraîchissement qui force également un rendu
-    const handleSuccess = React.useCallback(() => {
-      // Forcer d'abord le rendu en réinitialisant la sélection
-      setRowSelection({});
-      // Puis récupérer les données immédiatement, sans délai
-      fetchCategories();
-    }, []);
+    const handleSuccess = () => setRefreshRequested(true);
 
     return (
       <DropdownMenu>
@@ -126,10 +147,10 @@ export function DataTable() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <EditButton category={row.original} onSuccess={handleSuccess} />
+          <DropdownMenuItem onClick={() => showEditForm(row.original)}>Modifier</DropdownMenuItem>
           <DropdownMenuItem>Dupliquer</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DeleteButton category={row.original} onSuccess={handleSuccess} />
+          <DeleteCategoryDialog category={row.original} onSuccess={handleSuccess} />
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -244,13 +265,25 @@ export function DataTable() {
     fetchCategories();
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    if (refreshRequested) {
+      fetchCategories();
+      setRefreshRequested(false);
+    }
+  }, [refreshRequested]);
+
+  if (loading && !isFormVisible) {
     return (
       <div className="flex items-center justify-center p-8">
         <IconLoader className="size-6 animate-spin" />
         <span className="ml-2">Chargement des catégories...</span>
       </div>
     );
+  }
+
+  // Afficher le formulaire si l'état isFormVisible est true
+  if (isFormVisible) {
+    return <CategoryForm mode={formMode} category={selectedCategory} onSuccess={handleFormSuccess} onCancel={hideForm} />;
   }
 
   return (
@@ -283,7 +316,11 @@ export function DataTable() {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <CategoryFormDialog mode="create" onSuccess={() => fetchCategories()} />
+          <Button size="sm" onClick={showCreateForm}>
+            <IconPlus className="mr-1" />
+            <span className="hidden lg:inline">Ajouter une catégorie</span>
+            <span className="lg:hidden">Ajouter</span>
+          </Button>
         </div>
       </div>
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
