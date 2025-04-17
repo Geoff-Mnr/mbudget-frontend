@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/services/api";
+import api from "@/services/axiosInstance";
 import { toast } from "sonner";
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const { login } = useAuth();

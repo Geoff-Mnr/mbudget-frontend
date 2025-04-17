@@ -6,7 +6,7 @@ import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, us
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconCircleCheckFilled, IconDotsVertical, IconGripVertical, IconLayoutColumns, IconLoader, IconPlus } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconCircleCheckFilled, IconDotsVertical, IconGripVertical, IconLayoutColumns, IconLoader } from "@tabler/icons-react";
 import { ColumnDef, ColumnFiltersState, Row, SortingState, VisibilityState, flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -18,7 +18,10 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCategories } from "@/services/api";
+import { getCategories } from "@/services/categoryService";
+import { CategoryFormDialog } from "./category-form-dialog";
+import { EditButton } from "./edit-button";
+import { DeleteButton } from "./delete-button";
 
 export const categorySchema = z.object({
   id: z.number(),
@@ -51,116 +54,10 @@ function DragHandle({ id }: { id: number }) {
   );
 }
 
-const columns: ColumnDef<Category>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: "Nom",
-    cell: ({ row }) => {
-      return (
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {row.original.name}
-        </Button>
-      );
-    },
-    enableHiding: false,
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => <div className="max-w-[200px] truncate">{row.original.description || "-"}</div>,
-  },
-  {
-    accessorKey: "Nom du foyer",
-    header: "Foyer",
-    cell: ({ row }) => <div className="max-w-[150px] truncate">{row.original.household.name}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Statut",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.status === "Actif" ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 mr-1" /> : <IconLoader className="mr-1" />}
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "Actif",
-    header: "Actif",
-    cell: ({ row }) => <div className="flex">{row.original.is_active ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> : <IconLoader />}</div>,
-  },
-  {
-    accessorKey: "created_at",
-    header: "Créé le",
-    cell: ({ row }) => <div>{new Date(row.original.created_at).toLocaleDateString()}</div>,
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="data-[state=open]:bg-muted text-muted-foreground flex size-8" size="icon">
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Modifier</DropdownMenuItem>
-          <DropdownMenuItem>Dupliquer</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Supprimer</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
-
-function DraggableRow({ row }: { row: Row<Category> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  });
-
-  return (
-    <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-      ))}
-    </TableRow>
-  );
-}
-
 export function DataTable() {
   const [data, setData] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -173,6 +70,139 @@ export function DataTable() {
   const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}));
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(() => data?.map(({ id }) => id) || [], [data]);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Ajouter un timeout de 15 secondes pour éviter que l'appel ne reste bloqué
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await getCategories();
+      clearTimeout(timeoutId);
+
+      if (response.success && response.data) {
+        setData(response.data);
+        // Réinitialiser la sélection des lignes après un rafraîchissement
+        setRowSelection({});
+      } else {
+        setError("Erreur lors du chargement des catégories");
+        toast.error("Erreur lors du chargement des catégories");
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des catégories:", error);
+      setError("Erreur lors du chargement des catégories");
+      toast.error("Erreur lors du chargement des catégories");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction pour recharger manuellement
+  const handleRefresh = () => {
+    // Réinitialiser la sélection des lignes
+    setRowSelection({});
+    fetchCategories();
+  };
+
+  // Créer un composant spécifique pour les actions
+  function CategoryActions({ row }: { row: Row<Category> }) {
+    // Créer une fonction de rappel pour le rafraîchissement qui force également un rendu
+    const handleSuccess = React.useCallback(() => {
+      // Forcer d'abord le rendu en réinitialisant la sélection
+      setRowSelection({});
+      // Puis récupérer les données immédiatement, sans délai
+      fetchCategories();
+    }, []);
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="data-[state=open]:bg-muted text-muted-foreground flex size-8" size="icon">
+            <IconDotsVertical />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-32">
+          <EditButton category={row.original} onSuccess={handleSuccess} />
+          <DropdownMenuItem>Dupliquer</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DeleteButton category={row.original} onSuccess={handleSuccess} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  const columns: ColumnDef<Category>[] = [
+    {
+      id: "drag",
+      header: () => null,
+      cell: ({ row }) => <DragHandle id={row.original.id} />,
+    },
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: "Nom",
+      cell: ({ row }) => {
+        return (
+          <Button variant="link" className="text-foreground w-fit px-0 text-left">
+            {row.original.name}
+          </Button>
+        );
+      },
+      enableHiding: false,
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => <div className="max-w-[200px] truncate">{row.original.description || "-"}</div>,
+    },
+    {
+      accessorKey: "Nom du foyer",
+      header: "Foyer",
+      cell: ({ row }) => <div className="max-w-[150px] truncate">{row.original.household.name}</div>,
+    },
+    {
+      accessorKey: "status",
+      header: "Statut",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          {row.original.status === "Actif" ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 mr-1" /> : <IconLoader className="mr-1" />}
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "Actif",
+      header: "Actif",
+      cell: ({ row }) => <div className="flex">{row.original.is_active ? <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> : <IconLoader />}</div>,
+    },
+    {
+      accessorKey: "created_at",
+      header: "Créé le",
+      cell: ({ row }) => <div>{new Date(row.original.created_at).toLocaleDateString()}</div>,
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => <CategoryActions row={row} />,
+    },
+  ];
 
   const table = useReactTable({
     data,
@@ -211,22 +241,6 @@ export function DataTable() {
   }
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const response = await getCategories();
-        if (response.success && response.data) {
-          setData(response.data);
-        } else {
-          toast.error("Erreur lors du chargement des catégories");
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des catégories:", error);
-        toast.error("Erreur lors du chargement des catégories");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchCategories();
   }, []);
 
@@ -244,6 +258,10 @@ export function DataTable() {
       <div className="flex items-center justify-between px-4 mb-4 lg:px-6">
         <h2 className="text-xl font-semibold">Catégories</h2>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            {loading ? <IconLoader className="mr-1 animate-spin" /> : null}
+            <span className="hidden lg:inline">Rafraîchir</span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -265,14 +283,21 @@ export function DataTable() {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm">
-            <IconPlus className="mr-1" />
-            <span className="hidden lg:inline">Ajouter une catégorie</span>
-            <span className="lg:hidden">Ajouter</span>
-          </Button>
+          <CategoryFormDialog mode="create" onSuccess={() => fetchCategories()} />
         </div>
       </div>
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+        {error && (
+          <div className="bg-destructive/15 text-destructive border border-destructive/30 rounded-md p-3 mb-2">
+            <p className="flex items-center">
+              <span className="mr-2">⚠️</span>
+              {error}{" "}
+              <Button variant="link" size="sm" onClick={handleRefresh} className="ml-2 h-auto p-0">
+                Réessayer
+              </Button>
+            </p>
+          </div>
+        )}
         <div className="overflow-hidden rounded-lg border">
           <DndContext collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd} sensors={sensors} id={sortableId}>
             <Table>
@@ -291,11 +316,28 @@ export function DataTable() {
               </TableHeader>
               <TableBody className="**:data-[slot=table-cell]:first:w-8">
                 {table.getRowModel().rows?.length ? (
-                  <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
-                    {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
-                    ))}
-                  </SortableContext>
+                  <React.Fragment>
+                    {(() => {
+                      try {
+                        return (
+                          <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
+                            {table.getRowModel().rows.map((row) => (
+                              <DraggableRow key={row.id} row={row} />
+                            ))}
+                          </SortableContext>
+                        );
+                      } catch (error) {
+                        console.error("Erreur lors du rendu des lignes triables:", error);
+                        return table.getRowModel().rows.map((row) => (
+                          <TableRow key={row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                            ))}
+                          </TableRow>
+                        ));
+                      }
+                    })()}
+                  </React.Fragment>
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
@@ -359,5 +401,28 @@ export function DataTable() {
         </div>
       </div>
     </div>
+  );
+}
+
+function DraggableRow({ row }: { row: Row<Category> }) {
+  const { transform, transition, setNodeRef, isDragging } = useSortable({
+    id: row.original.id,
+  });
+
+  return (
+    <TableRow
+      data-state={row.getIsSelected() && "selected"}
+      data-dragging={isDragging}
+      ref={setNodeRef}
+      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition: transition,
+      }}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+      ))}
+    </TableRow>
   );
 }

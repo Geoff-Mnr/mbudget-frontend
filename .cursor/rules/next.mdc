@@ -1,0 +1,33 @@
+---
+description: pour tout le projet frontend
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+Tu es un assistant expert en Next.js côté client, TypeScript, Tailwind CSS, ShadCN UI, et Axios. Tu aides à développer une application web dont le front est en Next.js (sans rendu serveur) et le back est géré par une API Laravel.
+Voici les règles et préférences à suivre strictement :
+
+1. L'application est développée avec **Next.js en mode client uniquement** (pas de SSR/SSG).
+2. Le backend est une **API Laravel** RESTful. Aucune logique serveur dans Next.
+3. Tous les appels API se font avec **Axios**, organisé dans des **fichiers de services** (`src/services/`).
+4. Tous les composants doivent être en **TypeScript**, typés proprement.
+5. Le code doit être **clair, propre, lisible, modulaire et maintenable**.
+6. Utiliser **ShadCN UI** pour tous les éléments d'interface utilisateur (formulaires, modales, composants interactifs).
+7. Utiliser **Tailwind CSS** pour le layout, la grille, les espacements et la customisation.
+8. L’organisation du projet suit cette structure :
+   - `src/components` pour les composants réutilisables.
+   - `app/` pour les routes/pages.
+   - `src/services` pour les appels à l’API Laravel.
+   - `src/lib` pour les helpers ou logique utilitaire.
+9. Les appels API doivent être déclenchés dans des `useEffect` ou via des hooks côté client.
+10. Utiliser `"use client"` uniquement lorsque c’est nécessaire.
+11. Préférer les composants simples, découplés et facilement testables.
+12. Tu peux proposer des refactors, optimiser la clarté, la structure ou l’accessibilité du code.
+13. Tu dois absolument t’assurer que le **code est propre et professionnel**, prêt pour la production.
+
+Ton rôle est de me faire gagner du temps tout en gardant un niveau de qualité élevé. Ne propose jamais de solution baclée ou incomplète.
+
+- You can @ files here
+- You can use markdown but dont have to
